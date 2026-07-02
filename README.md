@@ -1,21 +1,20 @@
 # News Summarizer
 
-A Python API that fetches live news articles, summarizes them with a locally-running LLM, and stores everything in a database. Fully containerized with Docker — completely free to run, no API keys required at all.
+Fetches live news for a topic, groups articles that are covering the same story across different outlets, and summarizes each one with a locally-run LLM. No external API keys needed — everything runs in Docker.
 
 ## Features
 
-- Fetches current headlines from Google News (via its public RSS feed, no key needed)
-- Summarizes each article using a local LLM served by Ollama (no cloud LLM cost)
-- Stores articles and their summaries in PostgreSQL
-- REST API to trigger fetching and browse articles/summaries
+- Pulls current headlines from Google News RSS for any topic
+- Embeds each article and clusters near-duplicate coverage into a `Story` using cosine similarity over `pgvector`
+- Generates a per-article summary and, when multiple outlets cover the same story, a synthesized cross-source summary that notes where they disagree
+- Stores articles, embeddings, and stories in PostgreSQL
+- REST API with API-key auth on the write endpoint
+- Streamlit UI: enter a topic, click one button, see all matching articles with summaries
+- Unit tests for the clustering, summarization, and auth logic, run in CI on every push
 
 ## Tech Stack
 
-- **Python** + **FastAPI** — REST API
-- **PostgreSQL** — persistent storage
-- **Ollama** — runs a local open-source LLM for summarization
-- **Docker Compose** — orchestrates the app, database, and LLM containers together
-- **Google News RSS** — source of news articles
+Python, FastAPI, PostgreSQL + pgvector, Ollama (local LLM + embeddings), Streamlit, Docker Compose, pytest, GitHub Actions.
 
 ## Setup
 
@@ -23,23 +22,60 @@ A Python API that fetches live news articles, summarizes them with a locally-run
    ```bash
    docker compose up -d --build
    ```
-2. Pull a local model into Ollama (one-time step, run after containers are up):
+2. Pull the local models (one-time, after containers are up):
    ```bash
    docker compose exec ollama ollama pull llama3.2:1b
+   docker compose exec ollama ollama pull nomic-embed-text
    ```
+3. Copy `.env.example` to `.env` and set `API_KEY` if you want something other than the default.
 
 ## Usage
 
-Fetch and summarize the latest technology headlines:
+### UI
+
+Open http://localhost:8501, type a topic, click **Fetch & Summarize**.
+
+### API
+
+Fetch and summarize a topic (requires `X-API-Key`):
 
 ```bash
-curl -X POST "http://localhost:8000/articles/fetch?query=technology"
+curl -X POST "http://localhost:8000/articles/fetch?query=technology" \
+  -H "X-API-Key: dev-key"
 ```
 
-List all summarized articles:
+List articles:
 
 ```bash
 curl "http://localhost:8000/articles/"
 ```
 
-Interactive API docs: http://localhost:8000/docs
+List clustered stories:
+
+```bash
+curl "http://localhost:8000/stories/"
+```
+
+Get one story with its source articles:
+
+```bash
+curl "http://localhost:8000/stories/1"
+```
+
+Full API docs: http://localhost:8000/docs
+
+## Tests
+
+```bash
+pip install -r requirements.txt
+pytest -v
+```
+
+Tests mock the LLM/HTTP calls, so they run without Docker, Postgres, or Ollama.
+
+## How the clustering works
+
+1. Each new article gets embedded locally (`nomic-embed-text`).
+2. Its embedding is compared against one representative embedding per story seen for the same topic in the last 3 days.
+3. Above a similarity threshold, it joins that story; otherwise it starts a new one.
+4. The story summary is regenerated from all of its articles, so it improves as more outlets get added, and the LLM is asked to flag disagreement between sources.
