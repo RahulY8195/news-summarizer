@@ -7,6 +7,22 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: newsuser
+          POSTGRES_PASSWORD: newspass
+          POSTGRES_DB: newsdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U newsuser -d newsdb"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -18,4 +34,6 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run tests
+        env:
+          DATABASE_URL: postgresql://newsuser:newspass@localhost:5432/newsdb
         run: pytest -v

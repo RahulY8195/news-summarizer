@@ -71,7 +71,17 @@ pip install -r requirements.txt
 pytest -v
 ```
 
-Tests mock the LLM/HTTP calls, so they run without Docker, Postgres, or Ollama.
+Two tiers:
+
+- **Unit tests** (`test_auth.py`, `test_clustering.py`, `test_summarizer.py`) — pure logic, network calls mocked, no external services required.
+- **API integration tests** (`test_api_integration.py`) — exercise the full request path through FastAPI, SQLAlchemy, and a real Postgres/pgvector database (Ollama and the news RSS fetch are mocked; only persistence is real). These need Postgres running:
+
+  ```bash
+  docker compose up -d db
+  pytest -v
+  ```
+
+  If Postgres isn't reachable, this file's tests are skipped automatically rather than failing — CI runs both tiers via a Postgres service container.
 
 ## How the clustering works
 
