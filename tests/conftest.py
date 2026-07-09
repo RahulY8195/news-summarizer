@@ -24,10 +24,6 @@ POSTGRES_AVAILABLE = postgres_available()
 
 @pytest.fixture(scope="session")
 def _app():
-    # Importing app.main is what actually connects to Postgres (CREATE EXTENSION,
-    # create_all), so it's deferred to here rather than done at module import time.
-    # Only tests that request `client`/`db_session` (and are therefore already
-    # gated by `requires_postgres`) trigger this.
     from app.main import app
 
     return app

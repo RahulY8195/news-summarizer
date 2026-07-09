@@ -53,7 +53,6 @@ def save_embedding(db: Session, article_id: int, embedding: list[float]) -> mode
 def get_recent_story_candidates(
     db: Session, query: str, since: datetime
 ) -> list[tuple[int, list[float]]]:
-    """One representative embedding per recent story for this query, for clustering."""
     articles = (
         db.query(models.Article)
         .filter(

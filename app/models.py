@@ -10,8 +10,6 @@ EMBEDDING_DIM = 768
 
 
 class Story(Base):
-    """A cluster of articles from different sources covering the same event."""
-
     __tablename__ = "stories"
 
     id = Column(Integer, primary_key=True, index=True)

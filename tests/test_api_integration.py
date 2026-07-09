@@ -9,11 +9,8 @@ pytestmark = pytest.mark.skipif(
     reason="Postgres not reachable at DATABASE_URL; run `docker compose up -d db` to enable these tests",
 )
 
-# get_recent_story_candidates() only looks back RECENT_STORY_WINDOW (3 days), so
-# these need to be "recent" relative to whenever the test actually runs.
 _NOW = datetime.now(timezone.utc)
 
-# Two articles covering the same event (from different outlets) plus one unrelated article.
 FAKE_ARTICLES = [
     {
         "title": "Company X ships new chip",
@@ -38,8 +35,6 @@ FAKE_ARTICLES = [
     },
 ]
 
-# High cosine similarity between A and B (same story), low similarity to C.
-# Padded to EMBEDDING_DIM=768 to match the pgvector column's fixed dimension.
 _PAD = [0.0] * 765
 EMBEDDING_A = [1.0, 0.0, 0.0] + _PAD
 EMBEDDING_B = [0.99, 0.01, 0.0] + _PAD
@@ -53,8 +48,6 @@ _EMBEDDING_BY_CONTENT = {
 
 @pytest.fixture(autouse=True)
 def mock_external_services(monkeypatch):
-    """Fetching news and calling the local LLM are external services (RSS, Ollama);
-    everything else in this file exercises the real API + Postgres/pgvector layer."""
     monkeypatch.setattr(
         "app.routers.articles.news_client.fetch_articles",
         lambda query, **kwargs: FAKE_ARTICLES,
@@ -106,7 +99,6 @@ def test_fetch_creates_articles_and_clusters_matching_story(client):
     stories_resp = client.get("/stories/")
     stories = stories_resp.json()
 
-    # A and B should cluster into one story; C should be its own story.
     assert len(stories) == 2
     sizes = sorted(
         len(client.get(f"/stories/{s['id']}").json()["articles"]) for s in stories
@@ -130,7 +122,7 @@ def test_fetch_is_idempotent_on_rerun(client):
 
     assert first["new"] == 3
     assert second["fetched"] == 3
-    assert second["new"] == 0  # all three URLs already exist, deduped by URL
+    assert second["new"] == 0
 
     all_articles = client.get("/articles/").json()
     assert len(all_articles) == 3

@@ -10,7 +10,7 @@ Fetches live news for a topic, groups articles that are covering the same story 
 - Stores articles, embeddings, and stories in PostgreSQL
 - REST API with API-key auth on the write endpoint
 - Streamlit UI: enter a topic, click one button, see all matching articles with summaries
-- Unit tests for the clustering, summarization, and auth logic, run in CI on every push
+- Unit tests for the clustering, summarization, and auth logic, plus API integration tests against a real Postgres/pgvector database, run in CI on every push
 
 ## Tech Stack
 

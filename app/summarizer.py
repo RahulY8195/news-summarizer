@@ -45,7 +45,6 @@ def summarize(text: str) -> str:
 
 
 def summarize_story(texts: list[str], sources: list[str]) -> str:
-    """Synthesize one summary from multiple sources covering the same story."""
     if len(texts) == 1:
         return summarize(texts[0])
 

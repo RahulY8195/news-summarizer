@@ -17,12 +17,6 @@ def find_matching_story(
     candidates: list[tuple[int, list[float]]],
     threshold: float = SIMILARITY_THRESHOLD,
 ) -> int | None:
-    """Return the story_id of the closest candidate above `threshold`, or None.
-
-    `candidates` is a list of (story_id, embedding) pairs, e.g. one representative
-    embedding per recent story. Picks the best match rather than the first match
-    above threshold, so a near-duplicate isn't stolen by a weaker earlier cluster.
-    """
     best_story_id = None
     best_score = threshold
     for story_id, candidate_embedding in candidates:
